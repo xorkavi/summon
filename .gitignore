@@ -1,0 +1,19 @@
+# OS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+
+# Node (if someone runs the screenshot module standalone)
+node_modules/
+
+# Auth (never committed — contains session cookies)
+auth.json
+chrome-debug-profile/
+
+# Audit outputs (generated per-run, not version-controlled)
+screenshots/
+diagnostics.json
+test-results.json
+manifest.json

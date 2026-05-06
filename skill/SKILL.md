@@ -836,74 +836,73 @@ For FAILs:
 
 ## Phase 4: Figma Table Output
 
-Use `figma-console` MCP tools.
+Use `figma-console` MCP tools with the **standardized layout script** at `tools/figma-table-layout.js`.
 
-### Table layout
+The script has 5 deterministic steps. Execute them in order via `figma_execute`. Each step is self-contained — copy the code block, fill in the variables, send to Figma.
+
+### Execution sequence
+
+**Read `tools/figma-table-layout.js`** and execute each step:
+
+1. **Step 1 — Create page + section + table container + header**
+   - Fill: `COMPONENT_NAME`
+   - Returns: `tableId`, `sectionId`, `pageId`
+   - Run ONCE
+
+2. **Step 2 — Create domain header** (per domain group)
+   - Fill: `TABLE_ID`, `DOMAIN_NAME`, `USAGE_COUNT`
+   - Run ONCE per domain
+
+3. **Step 3 — Create data rows** (batches of 10)
+   - Fill: `TABLE_ID`, `ROWS` array from manifest
+   - Each row needs: `id`, `file`, `oldProps`, `context`, `newComponent`, `newProps`
+   - Returns: `imageRectIds` (node IDs for image fill)
+   - Run N/10 times (e.g., 9 batches for 84 rows)
+
+4. **Step 4 — Apply image fills** (after all screenshots uploaded)
+   - Upload each screenshot PNG via `figma_set_image_fill` to a temp rectangle
+   - Read the image hash from the temp rect
+   - Fill: `IMAGE_MAPPINGS` array of `{ targetNodeId, imageHash }`
+   - Run in batches of 10-15
+
+5. **Step 5 — Final resize**
+   - Fill: `SECTION_ID`, `TABLE_ID`
+   - Resizes section to wrap table content
+   - Run ONCE at the end
+
+### Image upload workflow
+
+`figma_set_image_fill` never works on target nodes directly. Use this exact workflow:
 
 ```
-Page: "{Component} Migration Audit"
-└── Section: "{Component} Migration Table"
-     └── Frame: "Table Container" (auto layout vertical, gap=0)
-           ├── Header Row Frame (auto layout horizontal, padding=12, bg=#F5F5F5)
-           │     ├── Text "Component Screenshot" (w=320)
-           │     ├── Text "Usage in File and Line" (w=220)
-           │     ├── Text "Variant + props (old)" (w=200)
-           │     ├── Text "Usage Context" (w=280)
-           │     ├── Text "Remapped to component" (w=160)
-           │     └── Text "Variant + props (new)" (w=220)
-           │
-           ├── Domain Header Frame: "[Domain] (N usages)" (full width, bg=#EAEAEA, padding=8)
-           │
-           ├── Row Frame (auto layout horizontal, gap=12, padding=12, border-bottom)
-           │     ├── Image Frame (320x200, image fill with screenshot)
-           │     ├── Text "libs/path/file.tsx:42" (font=mono, size=12)
-           │     ├── Text "variant=neutral, isRounded, className=px-2"
-           │     ├── Text "Bulk test columns, test result status label"
-           │     ├── Text "Chip" (font=bold)
-           │     └── Text "variant=neutral, size=sm"
-           │
-           ├── Row Frame ...
-           └── ...
+For each screenshot:
+  1. Call figma_set_image_fill with the PNG path and a temp rectangle ID
+  2. Call figma_execute to read: tempRect.fills[0]?.imageHash
+  3. Store the hash
+  4. After collecting a batch of hashes, run Step 4 to apply them all
 ```
 
-### Image upload strategy
+### Column widths (fixed, consistent)
 
-`figma_set_image_fill` always returns "applied to 0 nodes" in practice. **Skip the direct approach entirely** — always use the two-step hash workaround as the primary path:
+| Column | Width | Font |
+|--------|-------|------|
+| Screenshot | 320px | — (image) |
+| File + Line | 220px | Source Code Pro 11 |
+| Old variant + props | 200px | Inter Regular 12 |
+| Usage Context | 280px | Inter Regular 12 |
+| Remapped to | 160px | Inter Bold 13 |
+| New variant + props | 220px | Inter Regular 12 |
 
-```javascript
-// Step A: Upload to get hash (use a temp node)
-const tempRect = figma.createRectangle();
-tempRect.resize(320, 200);
-// Apply via figma_set_image_fill to this tempRect...
+Total width: 1400px + padding = 1768px frame.
 
-// Step B: Read the hash and apply to target
-const hash = tempRect.fills[0]?.imageHash;
-if (hash) {
-  const target = await figma.getNodeByIdAsync("TARGET_ID");
-  target.fills = [{ type: "IMAGE", scaleMode: "FIT", imageHash: hash }];
-}
-tempRect.remove();
-```
+### Key rules
 
-### Auto-layout sizing
-
-**IMPORTANT**: Set `counterAxisSizingMode = "AUTO"` AFTER calling `resize()`, not before. The `resize()` call resets sizing modes.
-
-```javascript
-frame.resize(1768, 1); // Set width, minimal height
-frame.layoutMode = 'VERTICAL';
-frame.counterAxisSizingMode = 'FIXED'; // width fixed
-frame.primaryAxisSizingMode = 'AUTO'; // height auto (grows with content)
-```
-
-### Batch creation
-
-Create rows in batches of 10-15 via `figma_execute`. Each batch:
-1. Gets the parent table frame by ID
-2. Creates N row frames with all text nodes
-3. Returns the IDs of image rectangles (for filling later)
-
-Then fill images separately (since image upload is async/unreliable).
+- **Always use the script** — never freestyle Figma layout. Consistency matters.
+- **Set sizing mode AFTER resize** — `resize()` resets sizing modes to FIXED.
+- **Use `getNodeByIdAsync`** — sync `getNodeById` fails on newer API.
+- **Batch rows in groups of 10** — too many in one execute = timeout.
+- **Image upload is always two-step hash** — primary path, not fallback.
+- **Run Step 5 last** — resizes section to actual content height.
 
 ---
 

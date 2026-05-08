@@ -19,10 +19,14 @@
 const BASE_URL = 'https://api.devrev.ai';
 
 function getToken(): string {
-  const token = process.env.DEVREV_TOKEN || process.env.DEVREV_PAT || process.env.DEVREV_SVC_ACC_TOKEN;
+  const token =
+    process.env.DEVREV_APP_PAT ||
+    process.env.DEVREV_PAT ||
+    process.env.DEVREV_TOKEN ||
+    process.env.DEVREV_SVC_ACC_TOKEN;
   if (!token) {
     throw new Error(
-      'No DevRev token found. Set one of: DEVREV_TOKEN, DEVREV_PAT, or DEVREV_SVC_ACC_TOKEN'
+      'No DevRev token found. Set one of: DEVREV_APP_PAT, DEVREV_PAT, DEVREV_TOKEN, or DEVREV_SVC_ACC_TOKEN'
     );
   }
   return token;

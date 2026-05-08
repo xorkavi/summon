@@ -36,9 +36,10 @@ When a DevRev issue ID is provided (e.g. `/summon Badge ISS-12345`), fetch the i
 
 ### Setup
 
-Requires a DevRev PAT. Set one of these env vars:
-- `DEVREV_TOKEN`
+Requires a DevRev PAT. Checks these env vars in order:
+- `DEVREV_APP_PAT` (production — preferred)
 - `DEVREV_PAT`
+- `DEVREV_TOKEN`
 - `DEVREV_SVC_ACC_TOKEN`
 
 ### How to fetch

@@ -26,6 +26,47 @@ Take annotated screenshots of every usage of an OLD design system component, cla
 5. **Figma link** — page URL for output table
 6. **App URL** — dev server (default: `http://localhost:4200`)
 7. **Org slug** — URL prefix (default: `devrev`)
+8. **DevRev issue ID** — e.g. `ISS-12345`. If provided, fetch the issue title, description, and comments to extract discrepancies, usages, or mapping decisions. See [DevRev Issue Integration](#devrev-issue-integration).
+
+---
+
+## DevRev Issue Integration
+
+When a DevRev issue ID is provided (e.g. `/summon Badge ISS-12345`), fetch the issue context BEFORE Phase 1:
+
+### Setup
+
+Requires a DevRev PAT. Set one of these env vars:
+- `DEVREV_TOKEN`
+- `DEVREV_PAT`
+- `DEVREV_SVC_ACC_TOKEN`
+
+### How to fetch
+
+Run `tools/fetch-devrev-issue.ts`:
+
+```bash
+DEVREV_TOKEN=$DEVREV_TOKEN npx tsx tools/fetch-devrev-issue.ts ISS-12345
+```
+
+This returns JSON with `{ title, description, comments, combinedText }`.
+
+### What to extract from the issue
+
+Parse the combined text (title + description + comments) for:
+
+1. **Usages list** — if the issue contains file paths and line numbers, use them as the usages source (replaces or supplements the usages file)
+2. **Discrepancies** — if the issue describes problems with existing migration decisions (e.g. "Badge on settings page should map to Chip not Counter"), apply those as overrides during classification
+3. **Mapping decisions** — comments may contain designer decisions like "all accent badges should use the new Emphasis variant"
+4. **Additional context** — scope narrowing ("only audit the imports module"), priority ordering, or specific usages to focus on
+
+### Priority rules
+
+When a DevRev issue is provided:
+- Issue decisions **override** the mapping image for specific usages mentioned
+- Issue can **narrow scope** — if it says "only these 10 usages", audit only those
+- Issue can **supply the usages list** — no separate file needed if the issue has all paths
+- Issue **comments are chronologically ordered** — later comments override earlier ones for the same usage
 
 ---
 

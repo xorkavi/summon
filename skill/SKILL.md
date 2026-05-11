@@ -1017,6 +1017,83 @@ Total width: 1400px + padding = 1768px frame.
 
 ---
 
+## Phase 5: Notion Consolidation Doc
+
+After the full analysis is complete (classification, screenshots, Figma table), create a populated Notion page in the Component Consolidation database using the template.
+
+### Database info
+
+- **Database:** `Component Consolidation docs`
+- **Database URL:** `https://www.notion.so/35d81946d8338077beb5e80a8f5f650a`
+- **Data source:** `collection://35d81946-d833-8044-95ac-000be36279b6`
+- **Template page:** `https://www.notion.so/35281946d83381e19feac52f7c3e6a52`
+
+### What to populate
+
+Use `notion-create-pages` to create a new page in the database. The page content follows the template structure with ALL sections filled from the audit data:
+
+#### 1. Overview table
+- Old component name, source file path, total usages count
+- New component name(s), Figma link
+- Old variants list, new variants/dimensions list
+
+#### 2. Variant Collapse Map
+One row per old variant with: usage count, visual description, target new component + variant, rationale, UX risk level (🟢/🟡/🔴)
+
+#### 3. Prop-Level Mapping
+Every old prop → new prop. Include: type changes, removed props, new required props.
+
+#### 4. Component Split Map (if applicable)
+The condition that routes to each new component, with examples from actual usages.
+
+#### 5. Usage-by-Usage Migration Table
+**Every row from the manifest** gets a row here with:
+- #, File (shortened), Line, Old Variant, className? (Yes/No), Context, Target Component, Target Variant, Status (✅/🔵/🟡/🔴/⬜), Notes
+
+**Status assignment rules:**
+- ✅ Auto — no className, clean variant map, number or text content is unambiguous
+- 🔵 Manual — has className that needs removal/wrapper, or conditional variant logic
+- 🟡 Design Review — color/variant change affects semantic meaning
+- 🔴 Redesign — usage doesn't fit new component model (indicators, dots, misuse)
+- ⬜ Pending — couldn't classify (data-dependent, ambiguous)
+
+#### 6. className Defragmentation
+Group all className overrides by pattern (margins, colors, sizing, shape, positioning) with counts and resolution strategy.
+
+#### 7. UX Impact Assessment
+Only include usages where the visual change meaningfully alters UX. List: usage #, file, what changes, user impact, severity, sign-off status.
+
+#### 8. Migration Plan
+Phases 1-5 with checkbox tasks, categorized by status type. Include counts per phase.
+
+#### 9. Migration Summary
+Counts table: Auto/Manual/Design Review/Redesign/N/A with percentages.
+
+#### 10. Appendix
+- Old theme tokens (paste from theme file)
+- New Figma spec (link + summary)
+- Audit report (link to Figma page with screenshots)
+
+### How to create the page
+
+Use `notion-create-pages` MCP tool with the database URL as parent. The page title should be:
+
+```
+{Component Name} Component Consolidation — {Component Name}
+```
+
+Set the icon to 🔧.
+
+Write the full content in Notion's enhanced markdown format with `<table>` blocks, `<callout>` blocks, and proper formatting as shown in the template.
+
+### When to run this phase
+
+- After Phase 3 (screenshots reviewed) and Phase 4 (Figma table created)
+- All manifest entries must have a classification (no ⬜ Pending unless genuinely ambiguous)
+- This is the LAST step — it's the deliverable that the team reviews
+
+---
+
 ## Hard Rules
 
 ### Coverage

@@ -65,27 +65,19 @@ else
   echo ""
   echo "Looking for devrev-web repo..."
 
-  # Search common locations
+  # Search from home directory (max 4 levels deep)
   CANDIDATES=()
   SEARCH_DIRS=(
-    "$HOME/arcade"
-    "$HOME/code"
-    "$HOME/repos"
-    "$HOME/projects"
-    "$HOME/dev"
-    "$HOME/work"
-    "$HOME/src"
     "$HOME"
   )
 
   for dir in "${SEARCH_DIRS[@]}"; do
     if [ -d "$dir" ]; then
-      # Find directories named devrev-web that have a package.json with nx
       while IFS= read -r candidate; do
         if [ -f "$candidate/nx.json" ] && [ -d "$candidate/libs/design-system" ]; then
           CANDIDATES+=("$candidate")
         fi
-      done < <(find "$dir" -maxdepth 3 -type d -name "devrev-web" 2>/dev/null)
+      done < <(find "$dir" -maxdepth 4 -type d -name "devrev-web" 2>/dev/null)
     fi
   done
 

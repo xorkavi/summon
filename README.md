@@ -14,23 +14,36 @@ Given an old design system component (e.g. `Badge`, `Chip`, `IconButton`):
 
 ## Installation
 
-### In a repo (recommended for teams)
-
-Copy the skill directory into your repo's `.claude/skills/`:
-
-```bash
-cp -r skill/ your-repo/.claude/skills/summon/
-cp tools/screenshot-module.ts your-repo/tools/shared/screenshot-module.ts
-```
-
-### Per-user (clone + symlink)
+### Quick setup (recommended)
 
 ```bash
 git clone https://github.com/xorkavi/summon.git ~/.claude/skills/summon-repo
-ln -s ~/.claude/skills/summon-repo/skill ~/.claude/skills/summon
+cd ~/.claude/skills/summon-repo
+./setup.sh /path/to/your-repo
 ```
 
-To update: `cd ~/.claude/skills/summon-repo && git pull`
+The setup script:
+- Symlinks the skill to `~/.claude/skills/summon` (Claude Code picks it up automatically)
+- Copies the screenshot module + Figma layout + DevRev fetcher to your repo's `tools/shared/`
+- Checks prerequisites (auth, tokens, Playwright)
+- Handles existing installations gracefully (asks before overwriting)
+
+### Without a target repo
+
+If you just want the skill available globally (no repo tools):
+
+```bash
+git clone https://github.com/xorkavi/summon.git ~/.claude/skills/summon-repo
+cd ~/.claude/skills/summon-repo
+./setup.sh
+```
+
+### Update to latest
+
+```bash
+cd ~/.claude/skills/summon-repo && git pull
+./setup.sh /path/to/your-repo  # re-copies tools if updated
+```
 
 ---
 

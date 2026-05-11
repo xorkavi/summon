@@ -14,12 +14,81 @@ Take annotated screenshots of every usage of an OLD design system component, cla
 ### Required
 
 1. **Old component name** — e.g. `Badge`, `Chip`, `IconButton`
-2. **Usages file** — text file listing every usage with file path, line, variant, props, and context
-3. **Migration mapping image** — shows OLD → NEW component routing rules
+
+### Provided OR auto-discovered
+
+2. **Usages file** — text file listing every usage with file path, line, variant, props, and context. **If not provided**, the skill greps the codebase to discover all usages automatically.
+3. **Migration mapping image** — shows OLD → NEW component routing rules. **If not provided**, the skill runs in **discovery mode** — scans all usages, summarizes patterns (variants used, children types, interaction patterns), and presents a structured report so the designer/user can make mapping decisions.
 
 ### Required (ask if not provided)
 
-4. **New component API** — what variants/props do the NEW components support? If not provided, ASK the user: "What variants and props does [Counter/Chip/etc] support in the new design system? I need this to fill the 'new props' column correctly."
+4. **New component API** — what variants/props do the NEW components support? If not provided, ASK the user: "What variants and props does [Counter/Chip/etc] support in the new design system? I need this to fill the 'new props' column correctly." **If running in discovery mode, skip this — there's nothing to map yet.**
+
+---
+
+## Discovery Mode (no mapping, no usages file)
+
+When only the component name is given (no usages file, no mapping image), the skill runs in **discovery mode** — its goal is to give you enough context to make mapping decisions.
+
+### What it does
+
+1. **Grep the codebase** for all `<ComponentName` usages
+2. **Read the DS source** to find all available variants/modifiers/slots
+3. **Read source code around each usage** (~20 lines) to understand:
+   - What `children` renders (number, text, icon, mixed)
+   - What variant is applied
+   - Whether it's interactive (onClick, onRemove)
+   - The domain/feature it belongs to
+4. **Cluster usages into patterns** — group by what they render:
+   - "Renders a count/number" (e.g., `{items.length}`, `{count}`)
+   - "Renders a status label" (e.g., `"Active"`, `"BETA"`, `"New"`)
+   - "Renders a removable selection" (has onRemove)
+   - "Renders as a dot/indicator" (empty children)
+   - etc.
+5. **Output a discovery report** — presented to the user:
+
+```
+## Badge Discovery Report (84 usages found)
+
+### Pattern Clusters
+
+| Pattern | Count | Example | Typical variant |
+|---------|-------|---------|-----------------|
+| Numeric count | 34 | `{linkedItems.length}` | neutral, mini |
+| Status label | 22 | `"Active"`, `"BETA"` | accent, success, neutral |
+| Removable chip-like | 12 | `{user.name}` with onRemove | (default) |
+| Text label | 9 | `"Recommended"`, `"Default Locale"` | neutral |
+| Indicator dot | 4 | (empty, positioned absolute) | alert, accent |
+| Dynamic variant | 3 | `variant={config.variant}` | varies |
+
+### Variants used across codebase
+- neutral: 38 usages
+- accent: 15 usages
+- (default/none): 14 usages
+- alert: 7 usages
+- success: 5 usages
+- mini: 3 usages
+- inverted: 2 usages
+
+### Suggested mapping questions for designer
+Based on these patterns, you'll need to decide:
+1. Numeric counts (34 usages) → which new component?
+2. Status labels (22 usages) → same component or split?
+3. Removable selections (12 usages) → likely Chip with onRemove?
+4. Indicator dots (4 usages) → new IndicatorDot component or keep?
+```
+
+6. **Ask the user** what to do next:
+   > "Here's what I found. Would you like to:
+   > A) Create the mapping image/decisions now and I'll proceed with the full audit
+   > B) Take screenshots of representative usages from each cluster so you can see them visually
+   > C) Export this report for the designer to review"
+
+### When to use discovery mode
+
+- Before the designer has created the mapping — give them data to inform decisions
+- When you want to understand the scope before committing to a full audit
+- When a new component is proposed but you need to see what currently exists
 
 ### Optional
 
